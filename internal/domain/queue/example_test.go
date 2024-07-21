@@ -14,5 +14,6 @@ func (s *queueTestSuite) TestPushGet_Success() {
 }
 
 func TestQueue(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(queueTestSuite))
 }

@@ -22,7 +22,6 @@ func NewGetFromQueueHandler(queues domain.Queues) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := makeCtx(r)
 		defer cancel()
-		r.WithContext(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -1,3 +1,4 @@
+// nolint:ireturn
 package queue
 
 import "sync"
@@ -16,46 +17,46 @@ func newBasicFifo[T any]() *basicFifo[T] {
 	}
 }
 
-func (f *basicFifo[T]) add(element T) {
+func (fifo *basicFifo[T]) add(element T) {
 	select {
-	case f.listener <- element:
+	case fifo.listener <- element:
 	default:
-		f.mu.Lock()
-		f.messages = append(f.messages, element)
-		f.mu.Unlock()
+		fifo.mu.Lock()
+		fifo.messages = append(fifo.messages, element)
+		fifo.mu.Unlock()
 	}
 }
 
-func (f *basicFifo[T]) get() T {
-	length := f.len()
+func (fifo *basicFifo[T]) get() T {
+	length := fifo.len()
 	if length == 0 {
-		elementToReturn := <-f.listener
+		elementToReturn := <-fifo.listener
 		return elementToReturn
 	}
-	return f.getLast()
+	return fifo.getLast()
 }
 
-func (f *basicFifo[T]) len() int {
-	f.mu.Lock()
-	length := len(f.messages)
-	f.mu.Unlock()
+func (fifo *basicFifo[T]) len() int {
+	fifo.mu.Lock()
+	length := len(fifo.messages)
+	fifo.mu.Unlock()
 	return length
 }
 
-func (f *basicFifo[T]) getLast() T {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+func (fifo *basicFifo[T]) getLast() T {
+	fifo.mu.Lock()
+	defer fifo.mu.Unlock()
 
-	elementToReturn := f.messages[0]
-	f.messages = f.messages[1:]
+	elementToReturn := fifo.messages[0]
+	fifo.messages = fifo.messages[1:]
 
 	return elementToReturn
 }
 
-func (f *basicFifo[T]) removeByFilter(input filter[T]) {
-	for i, messages := range f.messages {
+func (fifo *basicFifo[T]) removeByFilter(input filter[T]) {
+	for i, messages := range fifo.messages {
 		if input(messages) {
-			f.messages = removeIndex(f.messages, i)
+			fifo.messages = removeIndex(fifo.messages, i)
 			return
 		}
 	}

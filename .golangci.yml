@@ -260,6 +260,8 @@ linters-settings:
     # Default: [].
     ignore-names: [
       i,
+      r,
+      w,
       s,
       c,
       T,

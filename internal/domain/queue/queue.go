@@ -1,3 +1,4 @@
+// nolint:ireturn
 package queue
 
 import (
@@ -22,17 +23,17 @@ type Queue[T any] struct {
 	requests *basicFifo[*request[T]]
 }
 
-func (q *Queue[T]) GetMessage(ctx context.Context) (T, error) {
+func (queue *Queue[T]) GetMessage(ctx context.Context) (T, error) {
 	r := &request[T]{
 		id:     uuid.NewString(),
 		result: make(chan T, 1),
 	}
 	defer close(r.result)
-	q.requests.add(r)
+	queue.requests.add(r)
 	var result T
 	select {
 	case <-ctx.Done():
-		q.requests.removeByFilter(
+		queue.requests.removeByFilter(
 			func(input *request[T]) bool {
 				return input.id == r.id
 			},
@@ -43,21 +44,21 @@ func (q *Queue[T]) GetMessage(ctx context.Context) (T, error) {
 	}
 }
 
-func (q *Queue[T]) PutMessage(ctx context.Context, message T) error {
+func (queue *Queue[T]) PutMessage(ctx context.Context, message T) error {
 	select {
-	case q.messages <- message:
+	case queue.messages <- message:
 	case <-ctx.Done():
 	}
 	return nil
 }
 
-func (q *Queue[T]) Close() {
-	close(q.messages)
+func (queue *Queue[T]) Close() {
+	close(queue.messages)
 }
 
-func (q *Queue[T]) handle() {
-	for message := range q.messages {
-		r := q.requests.get()
+func (queue *Queue[T]) handle() {
+	for message := range queue.messages {
+		r := queue.requests.get()
 		r.result <- message
 	}
 }

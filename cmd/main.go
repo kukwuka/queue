@@ -40,13 +40,13 @@ func main() {
 
 	var handler http.Handler = mux
 
-	err := http.ListenAndServe("localhost:8090", handler)
+	err := http.ListenAndServe("localhost:8090", handler) //nolint:gosec
 	if err != nil {
 		log.Println(err.Error())
 	}
 }
 
-func newQ(maxLen int) domain.Queue {
+func newQ(maxLen int) domain.Queue { //nolint:ireturn
 	return queue.NewQueue[string](maxLen)
 }
 

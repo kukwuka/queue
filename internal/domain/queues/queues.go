@@ -2,6 +2,7 @@ package queues
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/kukwuka/queue/internal/domain"
@@ -17,7 +18,7 @@ type Queues struct {
 
 func NewQueues(factory domain.QueueFactory, queueMaxLen int, queuesMaxCount int) *Queues {
 	return &Queues{
-		queuesByName:   make(map[string]domain.Queue, 10),
+		queuesByName:   make(map[string]domain.Queue, queuesMaxCount),
 		factory:        factory,
 		queueMaxLen:    queueMaxLen,
 		queuesMaxCount: queuesMaxCount,
@@ -25,57 +26,65 @@ func NewQueues(factory domain.QueueFactory, queueMaxLen int, queuesMaxCount int)
 	}
 }
 
-func (q *Queues) Close() {
-	for _, queue := range q.queuesByName {
+func (queues *Queues) Close() {
+	for _, queue := range queues.queuesByName {
 		queue.Close()
 	}
 }
 
-func (q *Queues) GetMessageFromQueue(ctx context.Context, queueName string) (string, error) {
-	queue, err := q.getOrMakeNewTopic(queueName)
+func (queues *Queues) GetMessageFromQueue(ctx context.Context, queueName string) (string, error) {
+	queue, err := queues.getOrMakeNewTopic(queueName)
 	if err != nil {
 		return "", err
 	}
-	return queue.GetMessage(ctx)
+	message, err := queue.GetMessage(ctx)
+	if err != nil {
+		return "", fmt.Errorf("get message from queue %s: %w", queueName, err)
+	}
+	return message, nil
 }
 
-func (q *Queues) PutMessageToQueue(ctx context.Context, queueName string, message string) error {
-	queue, err := q.getOrMakeNewTopic(queueName)
+func (queues *Queues) PutMessageToQueue(ctx context.Context, queueName string, message string) error {
+	queue, err := queues.getOrMakeNewTopic(queueName)
 	if err != nil {
 		return err
 	}
-	return queue.PutMessage(ctx, message)
+	err = queue.PutMessage(ctx, message)
+	if err != nil {
+		return fmt.Errorf("put message to queue %s: %w", queueName, err)
+	}
+	return nil
 }
 
-func (q *Queues) getOrMakeNewTopic(queueName string) (domain.Queue, error) {
-	queue, exist := q.get(queueName)
+func (queues *Queues) getOrMakeNewTopic(queueName string) (domain.Queue, error) { //nolint:ireturn
+	queue, exist := queues.get(queueName)
 	if exist {
 		return queue, nil
 	}
-	if q.getLen() >= q.queuesMaxCount {
+	if queues.getLen() >= queues.queuesMaxCount {
 		return nil, domain.ErrMaxCountQueuesCount
 	}
-	return q.createNewQueue(queueName), nil
+	return queues.createNewQueue(queueName), nil
 }
 
-func (q *Queues) get(queueName string) (domain.Queue, bool) {
-	q.rw.RLock()
-	queue, exist := q.queuesByName[queueName]
-	q.rw.RUnlock()
+func (queues *Queues) get(queueName string) (domain.Queue, bool) { //nolint:ireturn
+	queues.rw.RLock()
+	queue, exist := queues.queuesByName[queueName]
+	queues.rw.RUnlock()
 	return queue, exist
 }
 
-func (q *Queues) getLen() int {
-	q.rw.RLock()
-	length := len(q.queuesByName)
-	q.rw.RUnlock()
+func (queues *Queues) getLen() int {
+	queues.rw.RLock()
+	length := len(queues.queuesByName)
+	queues.rw.RUnlock()
 	return length
 }
 
-func (q *Queues) createNewQueue(queueName string) domain.Queue {
-	queue := q.factory(q.queueMaxLen)
-	q.rw.Lock()
-	q.queuesByName[queueName] = queue
-	q.rw.Unlock()
+func (queues *Queues) createNewQueue(queueName string) domain.Queue { //nolint:ireturn
+	queue := queues.factory(queues.queueMaxLen)
+	queues.rw.Lock()
+	queues.queuesByName[queueName] = queue
+	queues.rw.Unlock()
 	return queue
 }
