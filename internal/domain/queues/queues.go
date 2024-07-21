@@ -33,7 +33,7 @@ func (queues *Queues) Close() {
 }
 
 func (queues *Queues) GetMessageFromQueue(ctx context.Context, queueName string) (string, error) {
-	queue, err := queues.getOrMakeNewTopic(queueName)
+	queue, err := queues.getOrMakeNewQueue(queueName)
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +45,7 @@ func (queues *Queues) GetMessageFromQueue(ctx context.Context, queueName string)
 }
 
 func (queues *Queues) PutMessageToQueue(ctx context.Context, queueName string, message string) error {
-	queue, err := queues.getOrMakeNewTopic(queueName)
+	queue, err := queues.getOrMakeNewQueue(queueName)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (queues *Queues) PutMessageToQueue(ctx context.Context, queueName string, m
 	return nil
 }
 
-func (queues *Queues) getOrMakeNewTopic(queueName string) (domain.Queue, error) { //nolint:ireturn
+func (queues *Queues) getOrMakeNewQueue(queueName string) (domain.Queue, error) { //nolint:ireturn
 	queue, exist := queues.get(queueName)
 	if exist {
 		return queue, nil

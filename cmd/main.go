@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/kukwuka/queue/internal/domain"
@@ -34,13 +36,10 @@ func main() {
 	configInstance := makeConfig()
 	queuesInstance := queues.NewQueues(newQ, configInstance.QueueMaxSize, configInstance.QueuesMaxCount)
 	defer queuesInstance.Close()
-	mux := http.NewServeMux()
-	mux.HandleFunc("PUT /queue/{queue}", appHTTP.NewPutToQueueHandler(queuesInstance))
-	mux.HandleFunc("GET /queue/{queue}", appHTTP.NewGetFromQueueHandler(queuesInstance))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	mux := appHTTP.NewRouter(queuesInstance, logger)
 
-	var handler http.Handler = mux
-
-	err := http.ListenAndServe("localhost:8090", handler) //nolint:gosec
+	err := http.ListenAndServe("localhost:8090", mux) //nolint:gosec
 	if err != nil {
 		log.Println(err.Error())
 	}

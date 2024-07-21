@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,13 +13,20 @@ import (
 	"github.com/kukwuka/queue/internal/domain"
 )
 
+func NewRouter(queues domain.Queues, logger *slog.Logger) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("PUT /queue/{queue}", newPutToQueueHandler(queues, logger))
+	mux.HandleFunc("GET /queue/{queue}", newGetFromQueueHandler(queues, logger))
+	return mux
+}
+
 const timeOutQueryParamKey = "timeout"
 
 type messageSchemas struct {
 	Message string `json:"message"`
 }
 
-func NewGetFromQueueHandler(queues domain.Queues) http.HandlerFunc {
+func newGetFromQueueHandler(queues domain.Queues, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := makeCtx(r)
 		defer cancel()
@@ -27,13 +35,14 @@ func NewGetFromQueueHandler(queues domain.Queues) http.HandlerFunc {
 			return
 		}
 		queueName := r.PathValue("queue")
-		message, err := queues.GetMessageFromQueue(ctx, queueName)
+		message, err := queues.GetMessageFromQueue(ctx, queueName) //nolint:contextcheck
 		if err != nil {
 			if errors.Is(err, domain.ErrMessageWaitTimeOut) {
 				http.Error(w, err.Error(), http.StatusNotFound)
 				return
 			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			logger.Error(fmt.Errorf("get from queue handler: %w", err).Error())
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		err = json.NewEncoder(w).Encode(messageSchemas{Message: message})
@@ -60,7 +69,7 @@ func makeCtx(r *http.Request) (context.Context, func(), error) {
 	return ctx, cancel, nil
 }
 
-func NewPutToQueueHandler(queues domain.Queues) http.HandlerFunc {
+func newPutToQueueHandler(queues domain.Queues, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		queueName := r.PathValue("queue")
 		var schema messageSchemas
@@ -69,13 +78,14 @@ func NewPutToQueueHandler(queues domain.Queues) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		err = queues.PutMessageToQueue(r.Context(), queueName, "message")
+		err = queues.PutMessageToQueue(r.Context(), queueName, schema.Message)
 		if err != nil {
 			if errors.Is(err, domain.ErrMaxCountQueuesCount) {
 				http.Error(w, err.Error(), http.StatusTooManyRequests)
 				return
 			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.Error(fmt.Errorf("put to queue handler: %w", err).Error())
 			return
 		}
 	}
