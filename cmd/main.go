@@ -60,6 +60,7 @@ func main() {
 	}
 }
 
+// Обертка над дженериками, компилятор все еще не понимает.
 func newQ(maxLen int) domain.Queue { //nolint:ireturn
 	return queue.NewQueue[string](maxLen)
 }
