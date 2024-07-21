@@ -2,7 +2,9 @@ package queue
 
 import (
 	"context"
+
 	"github.com/google/uuid"
+
 	"github.com/kukwuka/queue/internal/domain"
 )
 
@@ -40,6 +42,7 @@ func (q *Queue[T]) GetMessage(ctx context.Context) (T, error) {
 		return result, nil
 	}
 }
+
 func (q *Queue[T]) PutMessage(ctx context.Context, message T) error {
 	select {
 	case q.messages <- message:
@@ -47,6 +50,7 @@ func (q *Queue[T]) PutMessage(ctx context.Context, message T) error {
 	}
 	return nil
 }
+
 func (q *Queue[T]) Close() {
 	close(q.messages)
 }

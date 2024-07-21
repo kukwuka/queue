@@ -5,8 +5,10 @@ import (
 	"errors"
 )
 
-var ErrMessageWaitTimeOut = errors.New("didn't wait for the message")
-var ErrMaxCountQueuesCount = errors.New("maximum of count queues")
+var (
+	ErrMessageWaitTimeOut  = errors.New("didn't wait for the message")
+	ErrMaxCountQueuesCount = errors.New("maximum of count queues")
+)
 
 type Queue interface {
 	GetMessage(ctx context.Context) (string, error)

@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/kukwuka/queue/internal/domain"
 	"github.com/kukwuka/queue/internal/domain/queue"
 	"github.com/kukwuka/queue/internal/domain/queues"
 	appHTTP "github.com/kukwuka/queue/internal/presentation/http"
-	"log"
-	"net/http"
-	"time"
 )
 
 func makeConfig() config {
@@ -24,11 +25,12 @@ func makeConfig() config {
 	flag.DurationVar(&configInstance.TimeOut, timeOutFlag, time.Second, "timeout for handlers")
 	flag.StringVar(&configInstance.Port, portFlag, "8080", "port for server")
 	flag.IntVar(&configInstance.QueueMaxSize, queueMaxSizeFlag, defaultQueueMaxSize, "queue max size")
+
 	flag.IntVar(&configInstance.QueuesMaxCount, queuesMaxCountFlag, defaultQueuesMaxCount, "max count of queues")
 	return configInstance
 }
-func main() {
 
+func main() {
 	configInstance := makeConfig()
 	queuesInstance := queues.NewQueues(newQ, configInstance.QueueMaxSize, configInstance.QueuesMaxCount)
 	defer queuesInstance.Close()
@@ -40,9 +42,10 @@ func main() {
 
 	err := http.ListenAndServe("localhost:8090", handler)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Println(err.Error())
 	}
 }
+
 func newQ(maxLen int) domain.Queue {
 	return queue.NewQueue[string](maxLen)
 }

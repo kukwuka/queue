@@ -24,7 +24,6 @@ func (f *basicFifo[T]) add(element T) {
 		f.messages = append(f.messages, element)
 		f.mu.Unlock()
 	}
-
 }
 
 func (f *basicFifo[T]) get() T {

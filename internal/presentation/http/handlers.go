@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kukwuka/queue/internal/domain"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/kukwuka/queue/internal/domain"
 )
 
 const timeOutQueryParamKey = "timeout"
@@ -21,6 +22,7 @@ func NewGetFromQueueHandler(queues domain.Queues) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel, err := makeCtx(r)
 		defer cancel()
+		r.WithContext(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -37,7 +39,6 @@ func NewGetFromQueueHandler(queues domain.Queues) http.HandlerFunc {
 		}
 		err = json.NewEncoder(w).Encode(messageSchemas{Message: message})
 		if err != nil {
-
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

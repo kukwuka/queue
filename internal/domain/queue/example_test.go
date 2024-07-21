@@ -1,8 +1,9 @@
 package queue_test
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 type queueTestSuite struct {
@@ -10,7 +11,6 @@ type queueTestSuite struct {
 }
 
 func (s *queueTestSuite) TestPushGet_Success() {
-
 }
 
 func TestQueue(t *testing.T) {

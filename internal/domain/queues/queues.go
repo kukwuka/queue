@@ -2,8 +2,9 @@ package queues
 
 import (
 	"context"
-	"github.com/kukwuka/queue/internal/domain"
 	"sync"
+
+	"github.com/kukwuka/queue/internal/domain"
 )
 
 type Queues struct {
@@ -63,6 +64,7 @@ func (q *Queues) get(queueName string) (domain.Queue, bool) {
 	q.rw.RUnlock()
 	return queue, exist
 }
+
 func (q *Queues) getLen() int {
 	q.rw.RLock()
 	length := len(q.queuesByName)
