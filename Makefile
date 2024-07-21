@@ -13,3 +13,9 @@ lint:
 format:
 	go run $(LINT) cache clean
 	go run $(LINT) run --fix ./...
+
+test:
+	go test -race ./...
+
+up:
+	go run ./cmd -port=8081 -timeout=10s -queueMaxSize=3 -queuesMaxCount=3

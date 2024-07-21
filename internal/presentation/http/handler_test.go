@@ -158,6 +158,7 @@ func (s *handlerTestSuite) TestPutToQueueHandler_ErrFromQueues() {
 	s.logMessageEqual("put to queue handler: some put error", buffer.Bytes())
 }
 
+// Проверяем правильно ли логируем.
 func (s *handlerTestSuite) logMessageEqual(expectedMessage string, log []byte) {
 	type logSchema struct {
 		MSG string `json:"msg"`

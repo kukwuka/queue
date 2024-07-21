@@ -18,6 +18,7 @@ func NewQueue[T any](maxLen int) *Queue[T] {
 	return q
 }
 
+// Queue Реализация Самой очереди сообщений.
 type Queue[T any] struct {
 	messages chan T
 	requests *basicFifo[*request[T]]
@@ -48,6 +49,8 @@ func (queue *Queue[T]) PutMessage(ctx context.Context, message T) error {
 	select {
 	case queue.messages <- message:
 	case <-ctx.Done():
+		// В условиях задачи не сказано что делаем если очередь переполнилась.
+		// Сейчас реализовано так, что клиент ждет пока не запишет.
 	}
 	return nil
 }

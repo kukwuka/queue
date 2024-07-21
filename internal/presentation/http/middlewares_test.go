@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	appHTTP "github.com/kukwuka/queue/internal/presentation/http"
-
 	"github.com/stretchr/testify/suite"
+
+	appHTTP "github.com/kukwuka/queue/internal/presentation/http"
 )
 
 type middlewaresTestSuite struct {
@@ -22,7 +22,12 @@ func (s *handlerTestSuite) TestTimeOutMiddleware() {
 		time.Sleep(200 * time.Millisecond)
 		s.Equal(context.DeadlineExceeded, request.Context().Err())
 	}
-	req, err := http.NewRequest(http.MethodGet, "/queue/"+queueName, bytes.NewBuffer(nil))
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		http.MethodGet,
+		"/queue/"+queueName,
+		bytes.NewBuffer(nil),
+	)
 	s.Require().NoError(err)
 	response := httptest.NewRecorder()
 	appHTTP.NewTimeoutMiddleware(handler, 100*time.Millisecond).ServeHTTP(response, req)

@@ -3,7 +3,12 @@ package queue
 
 import "sync"
 
+// Базовая реализации FIFO очереди
+// Взял бы канал, если бы не надо было удалять отвалившиеся запросы (получилось бы проще).
+// Привык писать на дженериках, как-то так начал и так пошло
+// В данном примере используется как хранилище запросов.
 type basicFifo[T any] struct {
+	// Listener Нужен чтобы дождаться если в очереди нет ничего.
 	listener chan T
 	messages []T
 	mu       *sync.RWMutex
@@ -56,7 +61,9 @@ func (fifo *basicFifo[T]) getLast() T {
 func (fifo *basicFifo[T]) removeByFilter(input filter[T]) {
 	for i, messages := range fifo.messages {
 		if input(messages) {
+			fifo.mu.Lock()
 			fifo.messages = removeIndex(fifo.messages, i)
+			fifo.mu.Unlock()
 			return
 		}
 	}

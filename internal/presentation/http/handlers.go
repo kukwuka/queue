@@ -13,6 +13,8 @@ import (
 	"github.com/kukwuka/queue/internal/domain"
 )
 
+// Я обычно использую echo, непривычно с чистым http работать.
+
 func NewRouter(queues domain.Queues, logger *slog.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /queue/{queue}", newPutToQueueHandler(queues, logger))

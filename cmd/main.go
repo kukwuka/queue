@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
 	"log/slog"
@@ -14,6 +15,7 @@ import (
 	appHTTP "github.com/kukwuka/queue/internal/presentation/http"
 )
 
+// Есть библиотеки для удобной работы, но ладно и так пойдет, задачу решает.
 func makeConfig() config {
 	const (
 		timeOutFlag           = "timeout"
@@ -27,19 +29,32 @@ func makeConfig() config {
 	flag.DurationVar(&configInstance.TimeOut, timeOutFlag, time.Second, "timeout for handlers")
 	flag.StringVar(&configInstance.Port, portFlag, "8080", "port for server")
 	flag.IntVar(&configInstance.QueueMaxSize, queueMaxSizeFlag, defaultQueueMaxSize, "queue max size")
-
 	flag.IntVar(&configInstance.QueuesMaxCount, queuesMaxCountFlag, defaultQueuesMaxCount, "max count of queues")
+	flag.Parse()
 	return configInstance
 }
 
 func main() {
 	configInstance := makeConfig()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	configPayload, err := json.Marshal(configInstance)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	logger.Info("start with", "config", string(configPayload))
+
+	// По слоенной архитектуре еще должны быть юзкейсы, ну стал из делать
+	// Т.к. В данном случае они бесполезны и буду просто вызывать доменный сервис.
 	queuesInstance := queues.NewQueues(newQ, configInstance.QueueMaxSize, configInstance.QueuesMaxCount)
 	defer queuesInstance.Close()
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
 	mux := appHTTP.NewRouter(queuesInstance, logger)
 
-	err := http.ListenAndServe("localhost:8090", mux) //nolint:gosec
+	var handler http.Handler = mux
+	// Эта мидлвара должна быть в pkg нашей команды, но ладно, пока так.
+	handler = appHTTP.NewTimeoutMiddleware(handler, configInstance.TimeOut)
+
+	err = http.ListenAndServe(":"+configInstance.Port, handler) //nolint:gosec
 	if err != nil {
 		log.Println(err.Error())
 	}
@@ -50,8 +65,8 @@ func newQ(maxLen int) domain.Queue { //nolint:ireturn
 }
 
 type config struct {
-	Port           string
-	TimeOut        time.Duration
-	QueueMaxSize   int
-	QueuesMaxCount int
+	Port           string        `json:"port"`
+	TimeOut        time.Duration `json:"timeOut"`
+	QueueMaxSize   int           `json:"queueMaxSize"`
+	QueuesMaxCount int           `json:"queuesMaxCount"`
 }
